@@ -1,6 +1,6 @@
 # A Fresh Start, Starts Here
 
-**Pre-Requisites**: Internet access and admin rights  
+**Pre-Requisites**: Internet access, admin rights, and set execution policy to bypass    
 **How to use**: Right click ```FreshStart.ps1``` and select `Run with PowerShell`  
 
 ### Details:
