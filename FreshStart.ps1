@@ -8,7 +8,9 @@ if (!([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]
 }
 
 $Date = Get-Date -uformat "%Y%m%d-%H%M"
+$MyTz = "Eastern Standard Time"
 Start-Transcript -Path "$PSScriptRoot\FreshStart_$Date.txt" -Verbose
+
 
 # Credentials
 $User = (Get-WmiObject win32_computersystem).Domain + "\" + $env:UserName
@@ -16,7 +18,7 @@ $Creds = Get-Credential -Message "Enter Credentials for scheduling reboot" -User
 $CimSession = New-CimSession -Credential $Creds
 
 # VS Installs
-$VSInstallUri = "https://s3.us-east-2.amazonaws.com/travissaucier/cdn/vs_community__957475882.1551791274.exe"
+$VSInstallUri = "https://s3.amazonaws.com/tauri-it/cdn/vs_community__957475882.1551791274.exe"
 $VSExeOutput = "$PSScriptRoot\vs2017Community.exe"
 $VsInstallPath = "C:\Program Files (x86)\Microsoft Visual Studio"
 
@@ -27,17 +29,11 @@ $HyperVChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Hyper-V"
 $LinSubChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Windows-Subsystem-Linux"
 $VsPathChk = Test-Path "$VsInstallPath\2017\Community" 
 $TZChk = Get-TimeZone
-$CurrentTZ = "Eastern Standard Time"
 $BitsChk = Get-Module -Name bitstransfer
 
-# Scheduled Tasks
-$ReRunFreshStartTask = Get-ScheduledTask -TaskName "ReRunFreshStart" -ErrorAction SilentlyContinue
-$ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "$PSScriptRoot\FreshStart.ps1"
-$ReRunFreshStartTrigger = New-ScheduledTaskTrigger -AtLogOn
-
 # Set my timezone
-if ($TZChk.StandardName -ne $CurrentTZ) {
-    Set-TimeZone $CurrentTZ
+if ($TZChk.StandardName -ne $MyTz) {
+    Set-TimeZone $MyTz
 }
 
 # Function for checking if reboot is required 
@@ -65,6 +61,10 @@ return $false
 
 # Pending reboot checks and scheduling the task
 function Schedule-TaskReboot {
+    $ReRunFreshStartTask = Get-ScheduledTask -TaskName "ReRunFreshStart" -ErrorAction SilentlyContinue
+    $ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "$PSScriptRoot\FreshStart.ps1"
+    $ReRunFreshStartTrigger = New-ScheduledTaskTrigger -AtLogOn
+
     if (!($ReRunFreshStartTask)) {
         Register-ScheduledTask -Action $ReRunFreshStartAction -Trigger $ReRunFreshStartTrigger -RunLevel Highest `
             -TaskName "ReRunFreshStart" -Description "Re-Runs FreshStart Script" -CimSession $CimSession
