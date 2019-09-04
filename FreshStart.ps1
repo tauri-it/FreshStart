@@ -18,7 +18,6 @@ $VsInstallPath = "C:\Program Files (x86)\Microsoft Visual Studio"
 
 # Checks
 $NugetPath = "C:\Program Files\PackageManagement\ProviderAssemblies\nuget"
-$ChocoExe = "C:\ProgramData\chocolatey\choco.exe"
 $HyperVChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Hyper-V"
 $LinSubChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Windows-Subsystem-Linux"
 $VsPathChk = Test-Path "$VsInstallPath\2019\Community" 
@@ -87,11 +86,6 @@ if (!($BitsChk)) {
     Import-Module -Name BitsTransfer
 }
 
-# Install Chocolatey
-if (!(Test-Path $ChocoExe)) {
-    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-}
-
 # Enable Hyper-V and Linux subsystem
 if ($HyperVChk.State -ne "Enabled") {
     Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
@@ -110,12 +104,6 @@ if (!($VsPathChk)) {
     Schedule-TaskReboot
 }
 
-# Install special tools I like to use
-choco install "$PSScriptRoot\ChocoFreshStart.config" -y
 Schedule-TaskReboot
-
-######
-# Do a clone here for slack dark theme if using slack
-######
 
 Stop-Transcript
