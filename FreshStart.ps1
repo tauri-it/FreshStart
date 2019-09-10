@@ -24,6 +24,10 @@ $VsPathChk = Test-Path "$VsInstallPath\2019\Community"
 $TZChk = Get-TimeZone
 $BitsChk = Get-Module -Name bitstransfer
 
+# Re-Run
+$githubcontent = Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/tauri-it/FreshStart/moving2python/FreshStart.ps1'))
+
 # Set my timezone
 if ($TZChk.StandardName -ne $MyTz) {
     Set-TimeZone $MyTz
@@ -61,7 +65,7 @@ function Schedule-TaskReboot {
 
     # Task
     $ReRunFreshStartTask = Get-ScheduledTask -TaskName "ReRunFreshStart" -ErrorAction SilentlyContinue
-    $ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "$PSScriptRoot\FreshStart.ps1"
+    $ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $githubcontent
     $ReRunFreshStartTrigger = New-ScheduledTaskTrigger -AtLogOn
 
     if (!($ReRunFreshStartTask)) {
