@@ -11,25 +11,21 @@ $Date = Get-Date -uformat "%Y%m%d-%H%M"
 $MyTz = "Eastern Standard Time"
 Start-Transcript -Path "$PSScriptRoot\FreshStart_$Date.txt" -Verbose
 
-
-# Credentials
-$User = (Get-WmiObject win32_computersystem).Domain + "\" + $env:UserName
-$Creds = Get-Credential -Message "Enter Credentials for scheduling reboot" -User $User
-$CimSession = New-CimSession -Credential $Creds
-
 # VS Installs
-$VSInstallUri = "https://s3.amazonaws.com/tauri-it/cdn/vs_community__957475882.1551791274.exe"
-$VSExeOutput = "$PSScriptRoot\vs2017Community.exe"
+$VSInstallUri = "https://tauri-it.s3.amazonaws.com/cdn/vs_community__385086483.1552849408.exe"
+$VSExeOutput = "$PSScriptRoot\vs2019Community.exe"
 $VsInstallPath = "C:\Program Files (x86)\Microsoft Visual Studio"
 
 # Checks
 $NugetPath = "C:\Program Files\PackageManagement\ProviderAssemblies\nuget"
-$ChocoExe = "C:\ProgramData\chocolatey\choco.exe"
 $HyperVChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Hyper-V"
 $LinSubChk = Get-WindowsOptionalFeature -Online -FeatureName "Microsoft-Windows-Subsystem-Linux"
-$VsPathChk = Test-Path "$VsInstallPath\2017\Community" 
+$VsPathChk = Test-Path "$VsInstallPath\2019\Community" 
 $TZChk = Get-TimeZone
 $BitsChk = Get-Module -Name bitstransfer
+
+# Re-Run
+$githubcontent = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/tauri-it/FreshStart/moving2python/FreshStart.ps1'))"
 
 # Set my timezone
 if ($TZChk.StandardName -ne $MyTz) {
@@ -61,8 +57,14 @@ return $false
 
 # Pending reboot checks and scheduling the task
 function Schedule-TaskReboot {
+    # Credentials
+    $User = (Get-WmiObject win32_computersystem).Domain + "\" + $env:UserName
+    $Creds = Get-Credential -Message "Enter Credentials for scheduling reboot" -User $User
+    $CimSession = New-CimSession -Credential $Creds
+
+    # Task
     $ReRunFreshStartTask = Get-ScheduledTask -TaskName "ReRunFreshStart" -ErrorAction SilentlyContinue
-    $ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "$PSScriptRoot\FreshStart.ps1"
+    $ReRunFreshStartAction = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $githubcontent
     $ReRunFreshStartTrigger = New-ScheduledTaskTrigger -AtLogOn
 
     if (!($ReRunFreshStartTask)) {
@@ -87,11 +89,6 @@ if (!($BitsChk)) {
     Import-Module -Name BitsTransfer
 }
 
-# Install Chocolatey
-if (!(Test-Path $ChocoExe)) {
-    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-}
-
 # Enable Hyper-V and Linux subsystem
 if ($HyperVChk.State -ne "Enabled") {
     Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
@@ -105,18 +102,11 @@ if (!($VsPathChk)) {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Start-BitsTransfer -Source $VSInstallUri -Destination $VSExeOutput
 
-    cd "$PSScriptRoot"
-    .\vs2017Community.exe --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended `
+    & $VSExeOutput --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended `
         --add Microsoft.VisualStudio.Workload.NetCoreTools --add Microsoft.VisualStudio.Workload.NetWeb --quiet
     Schedule-TaskReboot
 }
 
-# Install special tools I like to use
-choco install "$PSScriptRoot\ChocoFreshStart.config" -y
 Schedule-TaskReboot
-
-######
-# Do a clone here for slack dark theme if using slack
-######
 
 Stop-Transcript
