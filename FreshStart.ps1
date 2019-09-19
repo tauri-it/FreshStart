@@ -25,7 +25,7 @@ $TZChk = Get-TimeZone
 $BitsChk = Get-Module -Name bitstransfer
 
 # Re-Run
-$githubcontent = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/tauri-it/FreshStart/moving2python/FreshStart.ps1'))"
+$githubcontent = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/tauri-it/FreshStart/master/FreshStart.ps1'))"
 
 # Set my timezone
 if ($TZChk.StandardName -ne $MyTz) {
